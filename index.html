@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101b30">
+<title>Morning Routine</title>
+<style>
+:root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}body{margin:0;background:linear-gradient(155deg,#101b30,#1b3151);color:#f7fafc;min-height:100vh;padding:calc(28px + env(safe-area-inset-top)) 18px 36px}main{max-width:480px;margin:auto}.eyebrow{letter-spacing:.15em;text-transform:uppercase;color:#9fc5f5;font-size:.75rem;font-weight:700}h1{font-size:2.2rem;margin:8px 0}p{color:#c4d2e5;line-height:1.5}.card{background:#ffffff12;border:1px solid #ffffff25;border-radius:22px;padding:20px;margin:18px 0;box-shadow:0 8px 25px #00000016}.habit{display:flex;align-items:center;justify-content:space-between;gap:12px}.habit h2{font-size:1.18rem;margin:0 0 4px}.habit p{margin:0;font-size:.9rem}.count{font-weight:700;font-size:1.05rem;margin:18px 0 12px}.track{height:10px;background:#ffffff24;border-radius:100px;overflow:hidden}.fill{height:100%;background:#7de0bc;width:0%;transition:width .2s}.btn{border:0;border-radius:14px;background:#a4e9cf;color:#092a25;font-weight:800;padding:14px 18px;font-size:1rem;min-height:48px;cursor:pointer;white-space:nowrap}.btn:disabled{background:#ffffff24;color:#c4d2e5;cursor:default}.foot{font-size:.82rem;color:#aabbd2}#status{min-height:1.5em;color:#a4e9cf;font-weight:600} .week{font-size:.9rem;color:#c4d2e5}
+</style>
+</head>
+<body><main>
+<div class="eyebrow">Your daily reset</div>
+<h1>Good morning ☀️</h1>
+<p>Two small habits. One stronger week.</p>
+<div class="card"><div class="habit"><div><h2>🧘 15-minute stretch</h2><p>Move and loosen up</p></div><button class="btn" id="stretchBtn" type="button">Log stretch</button></div><div class="count" id="stretchCount"></div><div class="track"><div class="fill" id="stretchBar"></div></div></div>
+<div class="card"><div class="habit"><div><h2>📖 10-minute reading</h2><p>Read something you enjoy</p></div><button class="btn" id="readBtn" type="button">Log reading</button></div><div class="count" id="readCount"></div><div class="track"><div class="fill" id="readBar"></div></div></div>
+<div class="card"><strong>This week's goal</strong><p class="week" id="weekLabel"></p><p id="summary"></p><div id="status" role="status" aria-live="polite"></div></div>
+<p class="foot">Each habit counts once per local calendar day. Your progress is saved on this device in this browser. Weeks run Monday–Sunday.</p>
+</main>
+<script>
+(function(){
+'use strict';
+const KEY='morning-routine-v1',GOAL=3;
+function localDay(date){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`;}
+function weekStart(date){const d=new Date(date.getFullYear(),date.getMonth(),date.getDate());d.setDate(d.getDate()-(d.getDay()+6)%7);return d;}
+function addDays(date,n){const d=new Date(date);d.setDate(d.getDate()+n);return d;}
+function load(){try{const x=JSON.parse(localStorage.getItem(KEY)||'{}');return {stretch:Array.isArray(x.stretch)?x.stretch:[],read:Array.isArray(x.read)?x.read:[]};}catch(e){return {stretch:[],read:[]};}}
+let data=load();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data));return true;}catch(e){document.getElementById('status').textContent='Unable to save. Check browser storage settings.';return false;}}
+function render(){const now=new Date(),today=localDay(now),start=weekStart(now),end=addDays(start,6),first=localDay(start),last=localDay(end);let leftTotal=0;
+for(const [habit,prefix] of [['stretch','stretch'],['read','read']]){
+const count=new Set(data[habit].filter(d=>typeof d==='string'&&d>=first&&d<=last)).size;
+const remaining=Math.max(0,GOAL-count);leftTotal+=remaining;
+document.getElementById(prefix+'Count').textContent=`${count} of ${GOAL} this week · ${remaining} left`;
+document.getElementById(prefix+'Bar').style.width=Math.min(100,count/GOAL*100)+'%';
+const button=document.getElementById(prefix+'Btn'),done=data[habit].includes(today);button.disabled=done;button.textContent=done?'✓ Done today':habit==='stretch'?'Log stretch':'Log reading';
+}
+const fmt={month:'short',day:'numeric'};
+document.getElementById('weekLabel').textContent=`${start.toLocaleDateString(undefined,fmt)} – ${end.toLocaleDateString(undefined,{...fmt,year:'numeric'})}`;
+document.getElementById('summary').textContent=leftTotal===0?'🎉 Both weekly goals complete!':`${leftTotal} total sessions left to reach both weekly goals.`;
+}
+function log(habit){const today=localDay(new Date());if(!data[habit].includes(today)){data[habit].push(today);save();document.getElementById('status').textContent=habit==='stretch'?'Stretch logged! Nice work.':'Reading logged! Nice work.';}render();}
+document.getElementById('stretchBtn').addEventListener('click',()=>log('stretch'));
+document.getElementById('readBtn').addEventListener('click',()=>log('read'));
+window.addEventListener('pageshow',render);document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});render();
+})();
+</script></body></html>
